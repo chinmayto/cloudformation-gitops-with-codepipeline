@@ -7,7 +7,7 @@ Parameters:
     Default: 'main'
   FullRepositoryId:
     Type: String
-    Default: 'user_name/cloudformation_stack_from_codepipeline'
+    Default: 'user_name/cloudformation-gitops-with-codepipeline'
   CodePipelineName:
     Type: String
     Default: 's3-bucket-from-git'
