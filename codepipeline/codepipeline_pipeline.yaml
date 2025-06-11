@@ -7,7 +7,7 @@ Parameters:
     Default: 'main'
   FullRepositoryId:
     Type: String
-    Default: 'user_name/cloudformation-gitops-with-codepipeline'
+    Default: 'chinmayto/cloudformation-gitops-with-codepipeline'
   CodePipelineName:
     Type: String
     Default: 's3-bucket-from-git'
@@ -169,6 +169,20 @@ Resources:
                 Action:
                   - cloudformation:*
                 Resource: '*'
+        - PolicyName: CloudFormationPassRolePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource: 
+                  - !GetAtt CodeBuildServiceRole.Arn
+                Condition:
+                  StringEqualsIfExists:
+                    iam:PassedToService:
+                      - codebuild.amazonaws.com
+                      - cloudformation.amazonaws.com
 
   CodePipelineRole:
     Type: AWS::IAM::Role
