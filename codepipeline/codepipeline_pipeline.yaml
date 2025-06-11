@@ -1,0 +1,362 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CodeStar connection, CodePipeline for CFN stacks creation'
+
+Parameters:
+  BranchName:
+    Type: String
+    Default: 'main'
+  FullRepositoryId:
+    Type: String
+    Default: 'user_name/cloudformation_stack_from_codepipeline'
+  CodePipelineName:
+    Type: String
+    Default: 's3-bucket-from-git'
+  ConnectionName:
+    Type: String
+    Default: 'GitHub-to-CodePipeline'
+  S3BucketName:
+    Type: String
+    Default: 'ct-cfn-files-for-stack'
+  CodeBuildProjectName:
+    Type: String
+    Default: 'cfnlint-project'
+
+Resources:
+#####################################
+# CodeStar Connection
+#####################################
+  GitHubConnection:
+    Type: 'AWS::CodeStarConnections::Connection'
+    Properties:
+      ConnectionName: !Ref ConnectionName
+      ProviderType: 'GitHub'
+
+#####################################
+# S3 bucket for CFN nested stack templates
+#####################################
+  PipelineArtifactStoreS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref S3BucketName
+
+  PipelineArtifactStoreS3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref PipelineArtifactStoreS3Bucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowS3AccessForPipelineServices
+            Principal:
+              Service:
+                - cloudformation.amazonaws.com
+                - codebuild.amazonaws.com
+                - codepipeline.amazonaws.com
+            Effect: Allow
+            Action: 
+              - s3:GetObject
+              - s3:GetObjectVersion
+              - s3:PutObject
+              - s3:ListBucket
+            Resource: 
+              - !Sub 'arn:${AWS::Partition}:s3:::${S3BucketName}/*'
+              - !Sub 'arn:${AWS::Partition}:s3:::${S3BucketName}'
+
+#####################################
+# CodeBuild project
+#####################################
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: CodeBuildServiceRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CodeBuildBasePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${CodeBuildProjectName}:*'
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3BucketName}/*'
+
+  CfnlintCodeBuildProject:
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Name: !Ref CodeBuildProjectName
+      Description: 'Project to run cfn-lint on the source code'
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:5.0
+        EnvironmentVariables: []
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              commands:
+                - echo "Installing CloudFormation Linter:"
+                - pip install cfn-lint --user
+            build:
+              commands:
+                - echo "Running linter on infrastructure directory:"
+                - |
+                  ERR=0
+                  for file in $(find ./infrastructure -type f \( -iname "*.yaml" -o -iname "*.yml" \)); do
+                    cfn-lint "$file" || ERR=1
+                  done
+                  if [ "$ERR" -eq "1" ]; then
+                    exit 1
+                  fi
+          artifacts:
+            files:
+              - '**/*'
+      ServiceRole: !Ref CodeBuildServiceRole
+
+#####################################
+# CodePipeline pipeline
+#####################################
+  CloudFormationExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: CloudFormationExecutionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 
+                - cloudformation.amazonaws.com
+            Action: 
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: CloudFormationS3ManagementPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:CreateBucket
+                  - s3:DeleteBucket
+                  - s3:PutBucketPolicy
+                  - s3:GetBucketPolicy
+                  - s3:ListBucket
+                  - s3:GetObject
+                  - s3:PutBucketTagging
+                  - s3:PutBucketPolicy
+                  - s3:DeleteBucketPolicy
+                Resource: !Sub 'arn:${AWS::Partition}:s3:::*'
+              - Effect: Allow
+                Action:
+                  - cloudformation:*
+                Resource: '*'
+
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: CodePipelineRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CodeStarSourceConnectionAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - codestar-connections:UseConnection
+                Resource: !Sub 'arn:${AWS::Partition}:codestar-connections:${AWS::Region}:${AWS::AccountId}:connection/*'
+        - PolicyName: CodeBuildPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                Resource: !Sub 'arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:project/${CfnlintCodeBuildProject}'
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+                Resource: !Sub 'arn:${AWS::Partition}:s3:::${S3BucketName}/*'
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: !Sub 'arn:${AWS::Partition}:s3:::${S3BucketName}'
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3BucketName}'
+        - PolicyName: CodeDeployPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:CreateStack
+                  - cloudformation:DeleteStack
+                  - cloudformation:DescribeStacks
+                  - cloudformation:UpdateStack
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:SetStackPolicy
+                  - cloudformation:ValidateTemplate
+                Resource: '*'
+        - PolicyName: CodePipelinePassRolePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource: 
+                  - !GetAtt CloudFormationExecutionRole.Arn
+                  - !GetAtt CodeBuildServiceRole.Arn
+                Condition:
+                  StringEqualsIfExists:
+                    iam:PassedToService:
+                      - cloudformation.amazonaws.com
+                      - codebuild.amazonaws.com
+
+  CreateCfnStackFromRepo:
+    Type: 'AWS::CodePipeline::Pipeline'
+    Properties:
+      Name: !Ref CodePipelineName
+      RoleArn: !GetAtt CodePipelineRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref S3BucketName
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: '1'
+              RunOrder: 1
+              Configuration:
+                BranchName: !Ref BranchName
+                ConnectionArn: !GetAtt GitHubConnection.ConnectionArn
+                DetectChanges: 'true'
+                FullRepositoryId: !Ref FullRepositoryId
+                OutputArtifactFormat: CODE_ZIP
+              OutputArtifacts:
+                - Name: SourceArtifact
+              Namespace: SourceVariables
+        - Name: CFN-Lint
+          Actions:
+            - Name: Run-CFN-Lint
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref CfnlintCodeBuildProject
+              InputArtifacts:
+                - Name: SourceArtifact
+              OutputArtifacts:
+                - Name: CflintArtifact
+              RunOrder: 1
+        - Name: Copy-to-S3
+          Actions:
+            - Name: Copy-to-S3
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: S3
+                Version: '1'
+              RunOrder: 1
+              Configuration:
+                BucketName: !Ref S3BucketName
+                Extract: 'true'
+              InputArtifacts:
+                - Name: SourceArtifact
+        - Name: Deploy-CFN-stacks
+          Actions:
+            - Name: DeployDevelopmentStack
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                Capabilities: 'CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND'
+                StackName: !Sub '${CodePipelineName}-development'
+                TemplatePath: SourceArtifact::infrastructure/development/root.yaml
+                RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                ParameterOverrides: |
+                  {
+                    "Environment": "development"
+                  }
+              InputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+            - Name: DeployStagingStack
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                Capabilities: 'CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND'
+                StackName: !Sub '${CodePipelineName}-staging'
+                TemplatePath: SourceArtifact::infrastructure/staging/root.yaml
+                RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                ParameterOverrides: |
+                  {
+                    "Environment": "staging"
+                  }
+              InputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+            - Name: DeployProductionStack
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                Capabilities: 'CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND'
+                StackName: !Sub '${CodePipelineName}-production'
+                TemplatePath: SourceArtifact::infrastructure/production/root.yaml
+                RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                ParameterOverrides: |
+                  {
+                    "Environment": "production"
+                  }
+              InputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+

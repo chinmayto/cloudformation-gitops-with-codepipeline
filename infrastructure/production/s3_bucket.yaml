@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'S3 bucket'
+
+Parameters:
+  S3BucketPrefixName:
+    Type: String
+  Environment:
+    Type: String
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        !Sub '${S3BucketPrefixName}-${Environment}'
+      Tags:
+        - Key: Name
+          Value:
+            !Sub '${S3BucketPrefixName}-${Environment}'
+        - Key: Environment
+          Value: !Ref Environment
+
+Outputs:
+  FullS3BucketName:
+    Value: !Ref S3Bucket
