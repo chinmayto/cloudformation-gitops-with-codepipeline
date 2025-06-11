@@ -4,10 +4,10 @@ Description: 'S3 bucket with a dynamically created name and apply a policy for a
 Parameters:
   S3BucketPrefixName:
     Type: String
-    Default: 'CT-storage-app-files'
+    Default: 'ct-storage-app-files'
   TemplateUrlBase: 
     Type: String
-    Default: 'https://cfn-files-for-stack.s3.region.amazonaws.com/infrastructure'
+    Default: 'https://ct-cfn-files-for-stack.s3.region.amazonaws.com/infrastructure'
   Environment:
     Description: List of available environments
     Type: String
