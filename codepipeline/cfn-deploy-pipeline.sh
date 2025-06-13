@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script deploys a CloudFormation stack using AWS CodePipeline.
+# This script deploys a CloudFormation stack
 
 STACK_NAME="codepipeline-pipeline-cfn"
 
