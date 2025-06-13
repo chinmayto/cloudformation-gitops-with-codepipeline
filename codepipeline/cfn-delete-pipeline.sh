@@ -6,7 +6,7 @@ STACK_NAME="codepipeline-pipeline-cfn"
 
 echo "Deleting CloudFormation stack: $STACK_NAME"
 aws cloudformation delete-stack \
-  --stack-name $STACK_NAME \
+  --stack-name $STACK_NAME
 
 if [ $? -eq 0 ]; then
   echo "CloudFormation stack $STACK_NAME deleted successfully."
