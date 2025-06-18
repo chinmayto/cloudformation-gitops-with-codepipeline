@@ -177,6 +177,7 @@ Resources:
                   - ssm:GetParameters
                   - logs:*
                   - cloudwatch:PutMetricData
+                  - cloudformation:*
                 Resource: "*"
         - PolicyName: CloudFormationPassRolePolicy
           PolicyDocument:
