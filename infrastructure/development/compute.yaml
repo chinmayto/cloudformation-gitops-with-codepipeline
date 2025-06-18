@@ -22,11 +22,6 @@ Parameters:
   InstanceSecurityGroup:
     Type: String
 
-Mappings:
-  RegionMap:
-    us-east-1:
-      AMI: "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
-
 Resources:
   EC2Role:
     Type: AWS::IAM::Role
