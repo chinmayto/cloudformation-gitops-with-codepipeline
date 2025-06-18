@@ -11,7 +11,7 @@ Parameters:
   Environment:
     Description: List of available environments
     Type: String
-    Default: 'Development'
+    Default: Development
     AllowedValues:
       - Development
       - Staging
