@@ -16,11 +16,11 @@ Parameters:
       - t3.small
     ConstraintDescription: Must be a valid EC2 instance type.
 
-    MyPublicSubnet:
-      Type: String
+  MyPublicSubnet:
+    Type: String
 
-    InstanceSecurityGroup:
-      Type: String
+  InstanceSecurityGroup:
+    Type: String
 
 Mappings:
   RegionMap:

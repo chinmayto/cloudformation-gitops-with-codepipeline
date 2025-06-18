@@ -93,7 +93,11 @@ Outputs:
   PublicSubnetId:
     Description: Public Subnet ID
     Value: !Ref MyPublicSubnet
+    Export:
+      Name: !Sub "${Environment}-public-subnet"
 
   InstanceSecurityGroup:
     Description: Security Group
     Value: !Ref InstanceSecurityGroup
+    Export:
+      Name: !Sub "${Environment}-instance-sg"
