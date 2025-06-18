@@ -11,11 +11,11 @@ Parameters:
   Environment:
     Description: List of available environments
     Type: String
-    Default: Development
     AllowedValues:
       - Development
       - Staging
       - Production
+    Default: Development
 
 Resources:
   # S3BucketStack:
