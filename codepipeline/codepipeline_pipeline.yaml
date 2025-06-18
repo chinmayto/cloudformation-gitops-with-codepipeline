@@ -10,7 +10,7 @@ Parameters:
     Default: 'chinmayto/cloudformation-gitops-with-codepipeline'
   CodePipelineName:
     Type: String
-    Default: 's3-bucket-from-git'
+    Default: 'webserver-from-git'
   ConnectionName:
     Type: String
     Default: 'GitHub-to-CodePipeline'
@@ -149,26 +149,35 @@ Resources:
             Action: 
               - sts:AssumeRole
       Policies:
-        - PolicyName: CloudFormationS3ManagementPolicy
+        - PolicyName: !Sub "CloudFormationDeploymentPolicy"
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
-                  - s3:CreateBucket
-                  - s3:DeleteBucket
-                  - s3:PutBucketPolicy
-                  - s3:GetBucketPolicy
-                  - s3:ListBucket
-                  - s3:GetObject
-                  - s3:PutBucketTagging
-                  - s3:PutBucketPolicy
-                  - s3:DeleteBucketPolicy
-                Resource: !Sub 'arn:${AWS::Partition}:s3:::*'
-              - Effect: Allow
-                Action:
-                  - cloudformation:*
-                Resource: '*'
+                  - ec2:*
+                  - autoscaling:*
+                  - iam:PassRole
+                  - iam:GetRole
+                  - iam:CreateInstanceProfile
+                  - iam:AddRoleToInstanceProfile
+                  - iam:RemoveRoleFromInstanceProfile
+                  - iam:DeleteInstanceProfile
+                  - iam:CreateRole
+                  - iam:PutRolePolicy
+                  - iam:AttachRolePolicy
+                  - iam:ListInstanceProfiles
+                  - iam:ListRoles
+                  - iam:DeleteRolePolicy
+                  - iam:TagRole
+                  - iam:DeleteRole
+                  - iam:GetInstanceProfile
+                  - iam:getRolePolicy
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - logs:*
+                  - cloudwatch:PutMetricData
+                Resource: "*"
         - PolicyName: CloudFormationPassRolePolicy
           PolicyDocument:
             Version: '2012-10-17'
