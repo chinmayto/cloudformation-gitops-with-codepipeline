@@ -2,6 +2,8 @@
 
 # This script deploys a CloudFormation stack
 
+aws s3 rm s3://ct-cfn-files-for-stack --recursive
+
 STACK_NAME="codepipeline-pipeline-cfn"
 
 echo "Deleting CloudFormation stack: $STACK_NAME"
