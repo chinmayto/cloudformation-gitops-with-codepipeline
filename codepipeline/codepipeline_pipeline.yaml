@@ -94,6 +94,10 @@ Resources:
                   - s3:PutObject
                 Resource:
                   - !Sub 'arn:${AWS::Partition}:s3:::${S3BucketName}/*'
+              - Effect: Allow
+                Action:
+                  - codeconnections:GetConnectionToken
+                Resource: !GetAtt GitHubConnection.ConnectionArn
 
   CfnlintCodeBuildProject:
     Type: 'AWS::CodeBuild::Project'
@@ -178,6 +182,10 @@ Resources:
                   - logs:*
                   - cloudwatch:PutMetricData
                   - cloudformation:*
+                  - s3:ListBucket
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
                 Resource: "*"
         - PolicyName: CloudFormationPassRolePolicy
           PolicyDocument:

@@ -90,7 +90,7 @@ Outputs:
     Description: VPC ID
     Value: !Ref MyVPC
 
-  PublicSubnetId:
+  MyPublicSubnet:
     Description: Public Subnet ID
     Value: !Ref MyPublicSubnet
     Export:
