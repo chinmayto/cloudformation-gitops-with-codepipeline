@@ -2,37 +2,35 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: 'S3 bucket with a dynamically created name and apply a policy for access from EC2 instances'
 
 Parameters:
-  S3BucketPrefixName:
-    Type: String
-    Default: 'ct-storage-app-files'
   TemplateUrlBase: 
     Type: String
     Default: 'https://ct-cfn-files-for-stack.s3.us-east-1.amazonaws.com/infrastructure'
   Environment:
     Description: List of available environments
     Type: String
-    Default: 'production'
     AllowedValues:
       - development
       - staging
       - production
+    Default: production
 
 Resources:
-  S3BucketStack:
+  NetworkStack:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Retain
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: !Sub '${TemplateUrlBase}/${Environment}/s3_bucket.yaml'
+      TemplateURL: !Sub '${TemplateUrlBase}/${Environment}/network.yaml'
       Parameters:
-        S3BucketPrefixName: !Ref S3BucketPrefixName
         Environment: !Ref Environment
 
-  S3BucketPolicyStack:
+  ComputeStack:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Retain
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: !Sub '${TemplateUrlBase}/${Environment}/s3_bucket_policy.yaml'
+      TemplateURL: !Sub '${TemplateUrlBase}/${Environment}/compute.yaml'
       Parameters:
-        S3BucketName: !GetAtt S3BucketStack.Outputs.FullS3BucketName
+        Environment: !Ref Environment
+        MyPublicSubnet: !GetAtt NetworkStack.Outputs.MyPublicSubnet
+        InstanceSecurityGroup: !GetAtt NetworkStack.Outputs.InstanceSecurityGroup
