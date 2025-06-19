@@ -14,7 +14,7 @@ By connecting GitHub to CodePipeline using CodeStar Connections, and leveraging 
 
 - Three environments: Development, Staging, and Production
 - One Git repository: Contains folders representing each environment
-- CloudFormation Nested Stacks: Used for modularizing common resources (like VPCs, IAM roles, and S3 buckets)
+- CloudFormation Nested Stacks: Used for modularizing common resources (like VPCs, IAM roles, and EC2 web server)
 - CodePipeline: Automates deployments by detecting changes in the GitHub repo and applying the appropriate CloudFormation templates
 - CodeBuild: Lints CloudFormation templates to ensure they are syntactically and structurally correct
 
@@ -452,7 +452,7 @@ fi
 ```
 
 Run the shell script:
-```shell
+```
 $ ./cfn-deploy-pipeline.sh 
 Deploying CloudFormation stack: codepipeline-pipeline-cfn
 
@@ -463,9 +463,13 @@ CloudFormation stack codepipeline-pipeline-cfn deployed successfully.
 Stack codepipeline-pipeline-cfn creation completed successfully.
 ```
 
+![alt text](image.png)
+
 ### Step 2: Authorize GitHub in CodeStar Connection
 
 Once the connection is created, go back to the Connections tab in the AWS console and authorize GitHub access.
+
+![alt text](image-1.png)
 
 At times, if you had previously linked your repository to your AWS account using a CodeStar connection, deleting and recreating the connection might still cause issues when creating a new CloudFormation stack—AWS may continue referencing the "old" connection. To resolve this, you should unlink the repository using the AWS CLI and then link it again to refresh the connection. Make sure to authorize again via the console after creating a new connection.
 
@@ -487,11 +491,32 @@ Once the stack is deployed and the pipeline is created, CodePipeline automatical
 3. Runs cfn-lint via CodeBuild
 4. Deploys nested stacks using CloudFormation
 
+![alt text](image-2.png)
+
+![alt text](image-3.png)
+
+![alt text](image-4.png)
+
+![alt text](image-5.png)
+
+![alt text](image-6.png)
+
+![alt text](image-7.png)
+
 ### Step 4: Make Changes and Watch Them Deploy
 
 With the GitOps model in place, any change committed to the GitHub repo will trigger the pipeline. For example:
 
-Lets update the desired capacity of autoscaling group to 2 for development environment
+Lets update the desired capacity of autoscaling group to 3 for development environment. 
+
+![alt text](image-8.png)
+
+to
+
+![alt text](image-9.png)
+
+Commit the changes to github repo and watch your infra getting updated accordingly.
+
 
 
 ### Cleanup
