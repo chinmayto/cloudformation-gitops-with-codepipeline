@@ -18,6 +18,8 @@ By connecting GitHub to CodePipeline using CodeStar Connections, and leveraging 
 - CodePipeline: Automates deployments by detecting changes in the GitHub repo and applying the appropriate CloudFormation templates
 - CodeBuild: Lints CloudFormation templates to ensure they are syntactically and structurally correct
 
+![alt text](/images/architecture.png)
+
 ### Step 1: Create Prerequisite Components Using CloudFormation
 
 - `GitHubConnection`: The CodeStar connection to GitHub
