@@ -463,13 +463,13 @@ CloudFormation stack codepipeline-pipeline-cfn deployed successfully.
 Stack codepipeline-pipeline-cfn creation completed successfully.
 ```
 
-![alt text](image.png)
+![alt text](/images/pre-req-stack.png)
 
 ### Step 2: Authorize GitHub in CodeStar Connection
 
 Once the connection is created, go back to the Connections tab in the AWS console and authorize GitHub access.
 
-![alt text](image-1.png)
+![alt text](/images/codestar_connection.png)
 
 At times, if you had previously linked your repository to your AWS account using a CodeStar connection, deleting and recreating the connection might still cause issues when creating a new CloudFormation stack—AWS may continue referencing the "old" connection. To resolve this, you should unlink the repository using the AWS CLI and then link it again to refresh the connection. Make sure to authorize again via the console after creating a new connection.
 
@@ -491,17 +491,20 @@ Once the stack is deployed and the pipeline is created, CodePipeline automatical
 3. Runs cfn-lint via CodeBuild
 4. Deploys nested stacks using CloudFormation
 
-![alt text](image-2.png)
+Build: cloudformation lint - cfn-lint:
+![alt text](/images/pipeline_build.png)
 
-![alt text](image-3.png)
+Deploy: Infra provisioning in progress:
+![alt text](/images/pipeline_deploy.png)
 
-![alt text](image-4.png)
+![alt text](/images/cf_stacks_deployed.png)
 
-![alt text](image-5.png)
+Deploy: Infra provisioning in complete:
+![alt text](/images/pipeline_complete.png)
 
-![alt text](image-6.png)
+![alt text](/images/deployed_ec2.png)
 
-![alt text](image-7.png)
+![alt text](/images/deployed_ec2_webpage.png)
 
 ### Step 4: Make Changes and Watch Them Deploy
 
@@ -509,15 +512,19 @@ With the GitOps model in place, any change committed to the GitHub repo will tri
 
 Lets update the desired capacity of autoscaling group to 3 for development environment. 
 
-![alt text](image-8.png)
+![alt text](/images/asg_before_scaling.png)
 
 to
 
-![alt text](image-9.png)
+![alt text](/images/asg_after_scaling.png)
 
 Commit the changes to github repo and watch your infra getting updated accordingly.
 
+Infra updation in progress and complete:
+![alt text](/images/pipeline_rerun.png)
 
+Additional development instances:
+![alt text](/images/updated_infra.png)
 
 ### Cleanup
 When you are done testing or no longer need the stacks, delete them manually via the AWS Console or CLI
@@ -534,6 +541,8 @@ By combining CloudFormation nested stacks with CodePipeline and GitHub, we've cr
 
 This approach not only improves deployment consistency but also integrates seamlessly with developer workflows—making infrastructure provisioning as easy as a git push.
 
-References
+### References
 GitHub Repo: https://github.com/chinmayto/cloudformation-gitops-with-codepipeline
-How to model GitOps environments: https://codefresh.io/blog/how-to-model-your-gitops-environments-and-promote-releases-between-them/
+
+How to model GitOps environments: https://codefresh.io/blog/
+how-to-model-your-gitops-environments-and-promote-releases-between-them/
